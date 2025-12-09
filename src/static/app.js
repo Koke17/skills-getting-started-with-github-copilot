@@ -20,11 +20,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
+        // Build participants list with delete icon
+        let participantsHtml = details.participants.map(participant => `
+          <li class="participant-item">
+            <span class="participant-name">${participant}</span>
+            <span class="delete-icon" title="Remove participant" data-activity="${name}" data-participant="${participant}">&#128465;</span>
+          </li>
+        `).join('');
+
         activityCard.innerHTML = `
           <h4>${name}</h4>
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <div class="participants">
+            <h5>Participants:</h5>
+            <ul class="participants-list">${participantsHtml}</ul>
+          </div>
         `;
 
         activitiesList.appendChild(activityCard);
@@ -34,6 +46,26 @@ document.addEventListener("DOMContentLoaded", () => {
         option.value = name;
         option.textContent = name;
         activitySelect.appendChild(option);
+
+        // Add event listeners for delete icons
+        activityCard.querySelectorAll('.delete-icon').forEach(icon => {
+          icon.addEventListener('click', async (e) => {
+            const activityName = icon.getAttribute('data-activity');
+            const participantEmail = icon.getAttribute('data-participant');
+            try {
+              const response = await fetch(`/activities/${encodeURIComponent(activityName)}/unregister?email=${encodeURIComponent(participantEmail)}`, {
+                method: 'DELETE'
+              });
+              if (response.ok) {
+                fetchActivities(); // Refresh list
+              } else {
+                alert('Failed to remove participant.');
+              }
+            } catch (err) {
+              alert('Error removing participant.');
+            }
+          });
+        });
       });
     } catch (error) {
       activitiesList.innerHTML = "<p>Failed to load activities. Please try again later.</p>";
